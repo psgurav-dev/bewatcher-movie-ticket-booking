@@ -13,7 +13,8 @@ const config: Config = {
         josefin : ['Unbounded', 'cursive'],
         lato :['Lato', 'sans-serif'],
         manrope : ['Manrope', 'sans-serif'],
-        visbylight :['visby-heavy','sans-serif']
+        visbylight :['visby-heavy','sans-serif'],
+        bricolage: ["var(--font-bricolage)", "system-ui", "sans-serif"],
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",

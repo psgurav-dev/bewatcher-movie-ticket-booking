@@ -1,39 +1,47 @@
-'use client'
-import React, { useEffect } from 'react'
+"use client";
+import React, { useEffect, useState, createContext } from "react";
 
-
-interface MovieContextType{
-    movies_data: any,
-
+interface MovieContextType {
+	movies_data: any[] | null; // Allow null initially
 }
-const defaultMovieContx = {
-    movies_data : [],
 
-}
-export const MovieContx = React.createContext<MovieContextType>(defaultMovieContx)
-type Props = {
-    children: React.ReactNode;
+const defaultMovieContx: MovieContextType = {
+	movies_data: null, // Initialize as null
 };
-export default function MoviesContext(props:Props) {
-    const [movies_data,setMovies_data] = React.useState<any>()
 
-    
-    useEffect(()=>{
-        const getMoviesData = async () =>{
-            let response = await fetch("/api/movies", { method: "GET" });
-            const jsonData = await response.json();
-            console.log(jsonData)
-            setMovies_data(jsonData.data.results)
-        }
-        getMoviesData()
-    },[])
-    const contextValue = {
-        movies_data:movies_data,
-      
-    }
-  return (
-    <MovieContx.Provider value={contextValue}>
-        {props.children}
-    </MovieContx.Provider >
-  )
+export const MovieContx = createContext<MovieContextType>(defaultMovieContx);
+
+type Props = {
+	children: React.ReactNode;
+};
+
+export default function MoviesContext({ children }: Props) {
+	const [movies_data, setMovies_data] = useState<any[] | null>(null);
+
+	useEffect(() => {
+		const getMoviesData = async () => {
+			try {
+				const response = await fetch("/api/movies", { method: "GET" });
+
+				if (!response.ok) {
+					throw new Error("Failed to fetch movies");
+				}
+				const jsonData = await response.json();
+				console.log("Fetched Movies Data:", jsonData);
+				setMovies_data(jsonData?.results || []);
+			} catch (error) {
+				console.error("Error fetching movies:", error);
+			}
+		};
+
+		getMoviesData();
+	}, []);
+
+	const contextValue = {
+		movies_data,
+	};
+
+	return (
+		<MovieContx.Provider value={contextValue}>{children}</MovieContx.Provider>
+	);
 }
