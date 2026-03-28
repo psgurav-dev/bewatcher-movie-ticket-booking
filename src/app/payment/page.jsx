@@ -4,7 +4,7 @@ import React, { useState, useContext, Suspense } from 'react';
 import { BookingContx } from '@/context/BookingContext'
 import QRCodeComponent from '@/components/QrCode'
 import { IoMdDoneAll } from "react-icons/io";
-import { motion } from 'framer-motion'
+import { motion } from "motion/react"
 import ErrorPage from '@/components/ErrorPage';
 import { MovieContx } from '@/context/MoviesContext'
 import Spinner from '@/components/Spinner'

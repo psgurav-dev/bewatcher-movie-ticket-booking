@@ -1,16 +1,23 @@
 'use client';
 import React, { useContext, MouseEvent, useState } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from "motion/react";
 import { BookingContx } from '@/context/BookingContext';
 import { MovieContx } from '@/context/MoviesContext';
 
 interface Movie {
     id: number;
+    title: string;
     poster_path: string;
     original_title: string;
     vote_average?: number;
     release_date?: string;
+}
+
+function movieDisplayTitle(movie: Movie) {
+    const t = movie.title?.trim();
+    if (t) return t;
+    return movie.original_title?.trim() || "";
 }
 
 interface MovieCardProps {
@@ -130,8 +137,12 @@ function MovieCard({ movie, index, isSelected, onBook }: MovieCardProps) {
     const year = movie.release_date?.slice(0, 4) ?? '';
 
     return (
+        <Link
+            href={`/movies/${movie.id}`}
+            className="hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/50 rounded"
+        >
         <motion.article
-            variants={cardVariants}
+                variants={cardVariants as unknown as Variants}
             className="relative flex flex-col gap-3 cursor-pointer group"
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
@@ -159,7 +170,7 @@ function MovieCard({ movie, index, isSelected, onBook }: MovieCardProps) {
 
                 <motion.img
                     src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-                    alt={movie.original_title}
+                        alt={movieDisplayTitle(movie)}
                     className="absolute inset-0 w-full h-full object-cover"
                     animate={{ scale: hovered ? 1.03 : 1 }}
                     transition={{ duration: 0.55, ease: [0.25, 0.1, 0.25, 1] }}
@@ -179,62 +190,20 @@ function MovieCard({ movie, index, isSelected, onBook }: MovieCardProps) {
                             </svg>
                             <span className="text-amber-300 text-[9px] font-bold font-mono">{movie.vote_average.toFixed(1)}</span>
                         </div>
-                    </div>
-                )}
-                <AnimatePresence>
-                    {hovered && (
-                        <motion.div
-                            className="absolute bottom-0 inset-x-0 z-30 p-4"
-                            initial={{ opacity: 0, y: 14 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 8 }}
-                            transition={{ duration: 0.22, ease: 'easeOut' }}
-                        >
-                            {!!movie.vote_average && movie.vote_average > 0 && (
-                                <div className="mb-3">
-                                    <StarRating rating={movie.vote_average} />
-                                </div>
-                            )}
-
-                            <motion.button
-                                onClick={(e) => onBook(e, index)}
-                                className="w-full py-[9px] rounded-xl text-[10px] font-bold tracking-[0.14em] uppercase relative overflow-hidden text-white"
-                                style={{
-                                    background: 'linear-gradient(120deg, #1d4ed8, #7c3aed)',
-                                }}
-                                whileTap={{ scale: 0.97 }}
-                            >
-                                Book Ticket
-                                {/* shimmer */}
-                                <motion.span
-                                    aria-hidden
-                                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12"
-                                    animate={{ x: ['-120%', '220%'] }}
-                                    transition={{ duration: 1.6, ease: 'easeInOut', repeat: Infinity, repeatDelay: 1 }}
-                                />
-                            </motion.button>
-                        </motion.div>
+                        </div>
                     )}
-                </AnimatePresence>
             </div>
 
             <div className="px-1 space-y-[3px]">
-                <h3
-                    className="text-white/90 text-sm font-semibold leading-snug line-clamp-1 transition-colors group-hover:text-white"
-                    style={{ fontFamily: "'Sora', sans-serif" }}
-                >
-                    <Link
-                        href={`/movies/${movie.id}`}
-                        className="hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/50 rounded"
+                    <h3
+                        className="text-white/90 text-sm font-semibold leading-snug line-clamp-1 transition-colors group-hover:text-white"
+                        style={{ fontFamily: "'Sora', sans-serif" }}
                     >
-                        {movie.original_title}
-                    </Link>
-                </h3>
-                {year && (
-                    <p className="text-white/35 text-[11px] font-mono">{year}</p>
-                )}
+                        {movieDisplayTitle(movie)}
+                    </h3>
             </div>
         </motion.article>
+        </Link>
     );
 }
 

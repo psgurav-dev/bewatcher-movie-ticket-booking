@@ -20,14 +20,14 @@ export default function MoviesContext({ children }: Props) {
 
 	useEffect(() => {
 		const getMoviesData = async () => {
-			console.log("getting movies list");
 			try {
 				const response = await fetch("/api/movies", { method: "GET" });
+
 				if (!response.ok) {
 					throw new Error("Failed to fetch movies");
 				}
 				const jsonData = await response.json();
-				// console.log("Fetched Movies Data:", jsonData);
+				console.log("Fetched Movies Data:", jsonData);
 				setMovies_data(jsonData?.results || []);
 			} catch (error) {
 				console.error("Error fetching movies:", error);

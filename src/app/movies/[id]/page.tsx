@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion } from "motion/react";
 import { extractPalette, getContrastColor } from '@/utils/colors';
 
 const TMDB_IMG = 'https://image.tmdb.org/t/p';
@@ -400,7 +400,7 @@ export default function MovieDetailPage() {
 									{movie.original_language ? ' · ' : ''}
 									{movie.original_title}
 								</p>
-							)}
+							)}	
 						</div>
 
 						<div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px] opacity-80 font-medium">

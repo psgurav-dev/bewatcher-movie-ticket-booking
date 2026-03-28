@@ -1,6 +1,6 @@
 import React, { useState, MouseEvent } from 'react';
 import { MdEventSeat } from 'react-icons/md';
-import { motion } from 'framer-motion';
+import { motion } from "motion/react";
 
 export default function RowSeats(props: any) {
     const seats = Array.from({ length: 20 }, (_, i) => i + 1);
