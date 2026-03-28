@@ -8,7 +8,7 @@ import RowSeats from "@/components/RowSeats";
 import { BookingContx } from "@/context/BookingContext";
 import { MovieContx } from "@/context/MoviesContext";
 
-// Dynamically import components that might cause SSR issues
+
 const ShowTimes = dynamic(() => import("@/components/ShowTimes"), {
 	ssr: false,
 });
@@ -44,7 +44,6 @@ export default function AudiPage() {
 		((text: string) => Promise<string>) | null
 	>(null);
 
-	// Load generateQRCode dynamically on client-side
 	useEffect(() => {
 		loadGenerateQRCode().then(setGenerateQRCodeFn);
 	}, []);

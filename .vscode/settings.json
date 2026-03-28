@@ -1,0 +1,7 @@
+{
+    "cSpell.words": ["Aadhaar", "aadhar", "esic", "heroui", "IFSC", "pincode"],
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2,
+    "prettier.requireConfig": true,
+    "editor.fontFamily": "Fira Code Medium, Fira Code, Consolas, 'Courier New', monospace"
+}

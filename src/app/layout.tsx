@@ -24,7 +24,7 @@ export default function RootLayout({
                 <Navbar />
                 <MovieContx>
                     <BookingContx>
-                        <div className="py-14 px-4">{children}</div>
+                        <div className="pt-96">{children}</div>
                     </BookingContx>
                 </MovieContx>
             </body>

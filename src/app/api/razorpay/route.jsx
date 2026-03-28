@@ -3,16 +3,11 @@ const shortid = require("shortid");
 import { NextResponse } from "next/server";
 
 export async function POST(req, res) {
-    if (req.method === "POST") {
-      // Initialize razorpay object
+  if (req.method === "POST") {
       const razorpay = new Razorpay({
         key_id: process.env.RAZORPAY_API_KEY,
         key_secret: process.env.RAZORPAY_API_SECRET,
       });
-  
-      // Create an order -> generate the OrderID -> Send it to the Front-end
-      // Also, check the amount and currency on the backend (Security measure)
-
 
       const payment_capture = 1;
       const amount = 1;
