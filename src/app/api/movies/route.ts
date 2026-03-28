@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import redis from "@/config/redis";
+// import redis from "@/config/redis";
 
 const formatDate = (date: Date) => date.toISOString().split("T")[0];
 
@@ -14,10 +14,10 @@ export async function GET(request: NextRequest) {
 
         const cacheKey = `movies_${fifteenDaysAgo}_${today}`;
 
-        const cachedData = await redis.get(cacheKey);
-        if (cachedData) {
-            return NextResponse.json(JSON.parse(cachedData), { status: 200 });
-        }
+        // const cachedData = await redis.get(cacheKey);
+        // if (cachedData) {
+        //     return NextResponse.json(JSON.parse(cachedData), { status: 200 });
+        // }
 
         const movieDbUrl = `https://api.themoviedb.org/3/discover/movie?include_adult=false&include_video=false&language=en-US&page=1&sort_by=popularity.desc&with_release_type=2%7C3&release_date.gte=${fifteenDaysAgo}&release_date.lte=${today}&api_key=${process
             .env.MOVIE_DB_API_KEY!}&with_origin_country=IN`;
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
         }
         const jsonData = await response.json();
 
-        await redis.set(cacheKey, JSON.stringify(jsonData), 'EX', 21600);
+        // await redis.set(cacheKey, JSON.stringify(jsonData), 'EX', 21600);
 
         return NextResponse.json(jsonData, { status: 200 });
     } catch (error) {
