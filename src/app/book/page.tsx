@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'motion/react';
@@ -18,6 +18,36 @@ function addDays(base: Date, n: number): Date {
 	const d = new Date(base);
 	d.setDate(d.getDate() + n);
 	return d;
+}
+
+/** Parse "09:30 AM" / "12:45 PM" into minutes from midnight. */
+function parseShowTimeToMinutes(timeStr: string): number | null {
+	const m = timeStr.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+	if (!m) return null;
+	let h = parseInt(m[1], 10);
+	const min = parseInt(m[2], 10);
+	const ap = m[3].toUpperCase();
+	if (ap === 'AM') {
+		if (h === 12) h = 0;
+	} else {
+		if (h !== 12) h += 12;
+	}
+	return h * 60 + min;
+}
+
+/** True if show starts strictly after `now` on the given calendar day. */
+function showStartsAfterNow(
+	showLabel: string,
+	day: Date,
+	now: Date
+): boolean {
+	const mins = parseShowTimeToMinutes(showLabel);
+	if (mins === null) return true;
+	const y = day.getFullYear();
+	const mo = day.getMonth();
+	const da = day.getDate();
+	const start = new Date(y, mo, da, Math.floor(mins / 60), mins % 60, 0, 0);
+	return start.getTime() > now.getTime();
 }
 
 function availabilityStyles(a: ShowAvailability): {
@@ -64,6 +94,12 @@ export default function BookPage() {
 	const [cityId, setCityId] = useState(MOCK_CITIES[0]?.id ?? 'mumbai');
 	const [pickDate, setPickDate] = useState(() => new Date());
 	const [dolbyOnly, setDolbyOnly] = useState(false);
+	/** Recompute “upcoming today” showtimes every minute without full page reload. */
+	const [nowTick, setNowTick] = useState(() => Date.now());
+	useEffect(() => {
+		const id = window.setInterval(() => setNowTick(Date.now()), 60_000);
+		return () => window.clearInterval(id);
+	}, []);
 
 	const city = useMemo(
 		() => MOCK_CITIES.find((c) => c.id === cityId) ?? MOCK_CITIES[0],
@@ -89,6 +125,7 @@ export default function BookPage() {
 	const dateISO = toISODate(pickDate);
 	const isToday =
 		toISODate(new Date()) === dateISO;
+	const nowForShows = useMemo(() => new Date(nowTick), [nowTick]);
 
 	const goToSeats = (theatre: Theatre, time: string) => {
 		const q = new URLSearchParams({
@@ -238,70 +275,97 @@ export default function BookPage() {
 								initial="hidden"
 								animate="show"
 							>
-								{theatres.map((theatre) => (
-									<motion.li
-										key={theatre.id}
-										variants={cardVariants}
-										className="rounded-2xl border border-white/[0.09] bg-white/[0.03] p-5 md:p-6"
-										style={{
-											boxShadow: '0 18px 50px rgba(0,0,0,0.35)',
-										}}
-									>
-										<div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-6 mb-4">
-											<div className="flex-1 min-w-0">
-												<p className="text-[10px] uppercase tracking-[0.2em] text-amber-400/70 mb-1">
-													{theatre.chain}
-												</p>
-												<h3 className="text-lg font-bold text-white/95 leading-snug">
-													{theatre.name}
-												</h3>
-												<p className="text-xs text-white/40 mt-1.5 flex items-center gap-1.5 flex-wrap">
-													<MapPin className="w-3.5 h-3.5 shrink-0 opacity-70" />
-													{theatre.area}
-													<span className="text-white/25">·</span>
-													<span>{theatre.distanceKm} km</span>
-													<span className="text-white/25">·</span>
-													<span>{theatre.screenLabel}</span>
-												</p>
-												<div className="flex flex-wrap gap-1.5 mt-3">
-													{theatre.amenities.map((a) => (
-														<span
-															key={a}
-															className="text-[10px] px-2 py-0.5 rounded-md bg-white/[0.06] text-white/50 border border-white/[0.06]"
-														>
-															{a}
-														</span>
-													))}
+								{theatres.map((theatre) => {
+									const showsListed = isToday
+										? theatre.shows.filter((s) =>
+												showStartsAfterNow(s.time, pickDate, nowForShows)
+										  )
+										: theatre.shows;
+
+									return (
+										<motion.li
+											key={theatre.id}
+											variants={cardVariants}
+											className="rounded-2xl border border-white/[0.09] bg-white/[0.03] p-5 md:p-6"
+											style={{
+												boxShadow: '0 18px 50px rgba(0,0,0,0.35)',
+											}}
+										>
+											<div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-6 mb-4">
+												<div className="flex-1 min-w-0">
+													<p className="text-[10px] uppercase tracking-[0.2em] text-amber-400/70 mb-1">
+														{theatre.chain}
+													</p>
+													<h3 className="text-lg font-bold text-white/95 leading-snug">
+														{theatre.name}
+													</h3>
+													<p className="text-xs text-white/40 mt-1.5 flex items-center gap-1.5 flex-wrap">
+														<MapPin className="w-3.5 h-3.5 shrink-0 opacity-70" />
+														{theatre.area}
+														<span className="text-white/25">·</span>
+														<span>{theatre.distanceKm} km</span>
+														<span className="text-white/25">·</span>
+														<span>{theatre.screenLabel}</span>
+													</p>
+													<div className="flex flex-wrap gap-1.5 mt-3">
+														{theatre.amenities.map((a) => (
+															<span
+																key={a}
+																className="text-[10px] px-2 py-0.5 rounded-md bg-white/[0.06] text-white/50 border border-white/[0.06]"
+															>
+																{a}
+															</span>
+														))}
+													</div>
 												</div>
 											</div>
-										</div>
 
-										<div>
-											<p className="text-[10px] uppercase tracking-[0.24em] text-white/30 mb-2 flex items-center gap-2">
-												<Armchair className="w-3.5 h-3.5" />
-												Showtimes
-											</p>
-											<div className="flex flex-wrap gap-2">
-												{theatre.shows.map((s) => {
-													const st = availabilityStyles(s.availability);
-													const disabled = s.availability === 'sold_out';
-													return (
-														<button
-															key={s.time}
-															type="button"
-															disabled={disabled}
-															title={st.label}
-															onClick={() => !disabled && goToSeats(theatre, s.time)}
-															className={`min-w-[4.75rem] px-3 py-2 rounded-xl border text-sm font-semibold transition-colors ${st.className}`}
-														>
-															{s.time}
-														</button>
-													);
-												})}
+											<div>
+												<p className="text-[10px] uppercase tracking-[0.24em] text-white/30 mb-2 flex items-center gap-2">
+													<Armchair className="w-3.5 h-3.5" />
+													Showtimes
+													{isToday && (
+														<span className="font-normal normal-case tracking-normal text-white/25">
+															· after{' '}
+															{nowForShows.toLocaleTimeString('en-IN', {
+																hour: 'numeric',
+																minute: '2-digit',
+															})}
+														</span>
+													)}
+												</p>
+												{showsListed.length === 0 ? (
+													<p className="text-xs text-white/35 py-2">
+														{isToday
+															? 'No more shows today — pick another date.'
+															: 'No showtimes listed.'}
+													</p>
+												) : (
+													<div className="flex flex-wrap gap-2">
+														{showsListed.map((s) => {
+															const st = availabilityStyles(s.availability);
+															const disabled = s.availability === 'sold_out';
+															return (
+																<button
+																	key={s.time}
+																	type="button"
+																	disabled={disabled}
+																	title={st.label}
+																	onClick={() =>
+																		!disabled && goToSeats(theatre, s.time)
+																	}
+																	className={`min-w-[4.75rem] px-3 py-2 rounded-xl border text-sm font-semibold transition-colors ${st.className}`}
+																>
+																	{s.time}
+																</button>
+															);
+														})}
+													</div>
+												)}
 											</div>
-										</div>
-									</motion.li>
-								))}
+										</motion.li>
+									);
+								})}
 							</motion.ul>
 						)}
 					</section>
