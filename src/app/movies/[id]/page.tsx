@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { motion } from "motion/react";
@@ -166,7 +166,6 @@ export default function MovieDetailPage() {
 				setMovie(data);
 
 				if (data.poster_path) {
-					// Same-origin proxy — TMDB remote URLs taint canvas / block getImageData
 					const paletteSrc = `/api/movies/poster?size=w500&path=${encodeURIComponent(data.poster_path)}`;
 					try {
 						const colors = await extractPalette(paletteSrc);
@@ -211,6 +210,51 @@ export default function MovieDetailPage() {
 	const cast = useMemo(() => {
 		return (movie?.credits?.cast ?? []).slice(0, 16);
 	}, [movie?.credits?.cast]);
+
+	const castScrollRef = useRef<HTMLDivElement>(null);
+	const [castScrollArrows, setCastScrollArrows] = useState({
+		canPrev: false,
+		canNext: false,
+	});
+
+	const updateCastScrollArrows = useCallback(() => {
+		const el = castScrollRef.current;
+		if (!el) return;
+		const { scrollLeft, scrollWidth, clientWidth } = el;
+		const max = scrollWidth - clientWidth;
+		setCastScrollArrows({
+			canPrev: scrollLeft > 2,
+			canNext: max > 2 && scrollLeft < max - 2,
+		});
+	}, []);
+
+	useLayoutEffect(() => {
+		updateCastScrollArrows();
+	}, [updateCastScrollArrows, cast.length, movie?.id]);
+
+	useEffect(() => {
+		const el = castScrollRef.current;
+		if (!el) return;
+		const onScroll = () => updateCastScrollArrows();
+		el.addEventListener('scroll', onScroll, { passive: true });
+		const ro = new ResizeObserver(onScroll);
+		ro.observe(el);
+		onScroll();
+		return () => {
+			el.removeEventListener('scroll', onScroll);
+			ro.disconnect();
+		};
+	}, [updateCastScrollArrows, cast.length, movie?.id]);
+
+	const scrollCastBy = useCallback((dir: 'prev' | 'next') => {
+		const el = castScrollRef.current;
+		if (!el) return;
+		const delta = Math.max(280, Math.round(el.clientWidth * 0.85));
+		el.scrollBy({
+			left: dir === 'prev' ? -delta : delta,
+			behavior: 'smooth',
+		});
+	}, []);
 
 	const trailerKey = useMemo(
 		() => pickYoutubeTrailer(movie?.videos),
@@ -273,7 +317,7 @@ export default function MovieDetailPage() {
 
 	return (
 		<div
-			className="relative min-h-screen w-full overflow-x-hidden pb-24 transition-colors duration-1000"
+			className="relative min-h-screen w-full overflow-x-hidden pb-24 mt-48 transition-colors duration-1000"
 			style={{
 				fontFamily: "'Sora', sans-serif",
 				backgroundColor: themeColors.bg,
@@ -442,7 +486,7 @@ export default function MovieDetailPage() {
 
 						<div className="flex flex-wrap gap-3">
 							<Link
-								href={`/movies`}
+								href={`/book`}
 								className="inline-flex items-center justify-center px-6 py-3 rounded-xl text-sm font-bold tracking-wide shadow-lg transition-transform hover:scale-[1.02] active:scale-[0.98]"
 								style={{
 									background: btnGradient,
@@ -603,10 +647,45 @@ export default function MovieDetailPage() {
 
 				{cast.length > 0 && (
 					<section className="mt-14">
-						<h2 className="text-[10px] uppercase tracking-[0.28em] opacity-40 mb-5">
-							Cast
-						</h2>
-						<div className="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2 scrollbar-thin">
+						<div className="flex items-end justify-between gap-4 mb-5">
+							<h2 className="text-[10px] uppercase tracking-[0.28em] opacity-40">
+								Cast
+							</h2>
+							<div className="flex gap-1.5 shrink-0">
+								<button
+									type="button"
+									aria-label="Scroll cast left"
+									disabled={!castScrollArrows.canPrev}
+									onClick={() => scrollCastBy('prev')}
+									className="h-8 w-8 rounded-lg border text-sm leading-none flex items-center justify-center transition-opacity disabled:opacity-25  hover:opacity-90"
+									style={{
+										borderColor: themeColors.muted,
+										color: themeColors.text,
+										backgroundColor: rgbToRgba(themeColors.bg, 0.6),
+									}}
+								>
+									‹
+								</button>
+								<button
+									type="button"
+									aria-label="Scroll cast right"
+									disabled={!castScrollArrows.canNext}
+									onClick={() => scrollCastBy('next')}
+									className="h-8 w-8 rounded-lg border text-sm leading-none flex items-center justify-center transition-opacity disabled:opacity-25  hover:opacity-90"
+									style={{
+										borderColor: themeColors.muted,
+										color: themeColors.text,
+										backgroundColor: rgbToRgba(themeColors.bg, 0.6),
+									}}
+								>
+									›
+								</button>
+							</div>
+						</div>
+						<div
+							ref={castScrollRef}
+							className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 -mx-2 px-2 scroll-smooth"
+						>
 							{cast.map((person) => (
 								<div
 									key={`${person.id}-${person.character}`}
@@ -645,23 +724,6 @@ export default function MovieDetailPage() {
 						</div>
 					</section>
 				)}
-
-				{/* Palette strip — ties theme to the poster */}
-				<section className="mt-16 flex flex-wrap items-center gap-3">
-					<span className="text-[9px] uppercase tracking-[0.2em] opacity-40">
-						Poster palette
-					</span>
-					<div
-						className="flex rounded-full overflow-hidden border h-6"
-						style={{ borderColor: themeColors.muted }}
-					>
-						{(palette.length > 0 ? palette : FALLBACK_PALETTE)
-							.slice(0, 6)
-							.map((c, i) => (
-								<div key={i} className="w-8 h-full" style={{ background: c }} title={c} />
-							))}
-					</div>
-				</section>
 			</div>
 		</div>
 	);

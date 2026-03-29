@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
         const { Show, MovieId, showDate, seats } = reqBody;
 
         let existingShow = await Booking.findOneAndUpdate(
-            { date: showDate, movieId: MovieId, show: Show },
+            { date: showDate, movieId: MovieId, showtime: Show },
             { $push: { seats: { $each: seats } } },
             { new: true } // Set to true to return the modified document rather than the original
         );
