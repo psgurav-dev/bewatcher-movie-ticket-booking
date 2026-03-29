@@ -63,7 +63,7 @@ export default function SeatMap({
 
 	return (
 		<motion.div
-			className="w-full max-w-3xl mx-auto flex flex-col gap-3 px-1"
+			className="w-full max-w-3xl mx-auto flex flex-col gap-3 overflow-auto px-6"
 			initial={{ opacity: 0, y: 8 }}
 			animate={{ opacity: 1, y: 0 }}
 			transition={{ duration: 0.45, ease: 'easeOut' }}
@@ -74,7 +74,7 @@ export default function SeatMap({
 				return (
 					<div
 						key={row}
-						className="flex items-center gap-1 sm:gap-2 justify-center flex-wrap sm:flex-nowrap"
+						className="flex items-center gap-1 sm:gap-2 md:justify-center justify-start"
 					>
 						<span
 							className={`w-6 sm:w-8 text-center text-xs font-bold shrink-0 ${label}`}
