@@ -16,6 +16,7 @@ import { cn } from "@/utils/tailwind-config";
 const LINKS = [
 	{ label: "Discover", href: "/" },
 	{ label: "Book Tickets", href: "/movies" },
+	{ label: "Cinemas", href: "/book" },
 ] as const;
 
 function pathActive(href: string, pathname: string | null) {

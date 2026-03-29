@@ -2,47 +2,54 @@ const Razorpay = require("razorpay");
 const shortid = require("shortid");
 import { NextResponse } from "next/server";
 
-export async function POST(req, res) {
-  if (req.method === "POST") {
-      const razorpay = new Razorpay({
-        key_id: process.env.RAZORPAY_API_KEY,
-        key_secret: process.env.RAZORPAY_API_SECRET,
-      });
+/**
+ * Creates a Razorpay order. Pass { amount } in the body where amount is in paise (e.g. ₹50 → 5000).
+ */
+export async function POST(req) {
+	try {
+		if (!process.env.RAZORPAY_API_KEY || !process.env.RAZORPAY_API_SECRET) {
+			return NextResponse.json(
+				{ error: "Razorpay is not configured on the server." },
+				{ status: 500 }
+			);
+		}
 
-      const payment_capture = 1;
-      const amount = 1;
-      const currency = "INR";
-      const options = {
-        amount: (amount * 100).toString(),
-        currency,
-        receipt: shortid.generate(),
-        payment_capture,
-      };
-  
-      try {
-        const response = await razorpay.orders.create(options);
-        // res.status(200).json({
-        //   id: response.id,
-        //   currency: response.currency,
-        //   amount: response.amount,
-        // });
-        return NextResponse.json({
-            message: "success",
-            id: response.id,
-            currency: response.currency,
-            amount: response.amount,
-          }, {
-            status: 200,
-          })
+		const body = await req.json().catch(() => ({}));
+		const raw = body?.amount;
+		const amountPaise =
+			typeof raw === "number" && Number.isFinite(raw) && raw >= 100
+				? Math.floor(raw)
+				: 100;
 
+		const razorpay = new Razorpay({
+			key_id: process.env.RAZORPAY_API_KEY,
+			key_secret: process.env.RAZORPAY_API_SECRET,
+		});
 
-      } catch (err) {
-        console.error(err);
-        // res.status(400).json({ error: "Failed to create Razorpay order", details: err.message });
-      }
-    } else {
-      // Handle any other HTTP method
-      res.status(405).json({ error: "Method Not Allowed" });
-    }
-  }
-  
+		const response = await razorpay.orders.create({
+			amount: String(amountPaise),
+			currency: "INR",
+			receipt: shortid.generate(),
+			payment_capture: 1,
+		});
+
+		return NextResponse.json(
+			{
+				message: "success",
+				id: response.id,
+				currency: response.currency,
+				amount: response.amount,
+			},
+			{ status: 200 }
+		);
+	} catch (err) {
+		console.error(err);
+		return NextResponse.json(
+			{
+				error: "Failed to create Razorpay order",
+				details: err?.message || String(err),
+			},
+			{ status: 400 }
+		);
+	}
+}
