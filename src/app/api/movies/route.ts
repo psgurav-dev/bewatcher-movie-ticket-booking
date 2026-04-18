@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 // import redis from "@/config/redis";
 
+/** TMDB responses must not sit in Next.js Data Cache or edge caches, or "today's window" stays stale. */
+export const dynamic = "force-dynamic";
+
 const formatDate = (date: Date) => date.toISOString().split("T")[0];
 
 export async function GET(request: NextRequest) {
@@ -23,9 +26,10 @@ export async function GET(request: NextRequest) {
             .env.MOVIE_DB_API_KEY!}&with_origin_country=IN`;
 
         const response = await fetch(movieDbUrl, {
-            method: 'GET',
+            method: "GET",
+            cache: "no-store",
             headers: {
-                accept: 'application/json',
+                accept: "application/json",
                 Authorization: `Bearer ${process.env.MOVIE_DB_API_KEY!}`,
             },
         });
@@ -38,7 +42,12 @@ export async function GET(request: NextRequest) {
 
         // await redis.set(cacheKey, JSON.stringify(jsonData), 'EX', 21600);
 
-        return NextResponse.json(jsonData, { status: 200 });
+        return NextResponse.json(jsonData, {
+            status: 200,
+            headers: {
+                "Cache-Control": "private, no-store, must-revalidate",
+            },
+        });
     } catch (error) {
         console.error('Error fetching movies:', error);
         return NextResponse.json(
